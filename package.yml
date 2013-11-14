@@ -1,0 +1,11 @@
+---
+author: ishiduca@gmail.com
+description: cookie parser
+devDependencies:
+  qunit-tap: '~1.4.1'
+  qunitjs: '~1.10.0'
+keywords: cookie
+license: MIT
+main: ./
+name: cookie-m
+version: 0.0.1

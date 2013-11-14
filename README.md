@@ -59,14 +59,20 @@ require('http').createServer(function (req, res) {
 
 ### get
 > get value form __httpServer.request.headers.cookie__
+
+```js
     cookie.get('name')
+```
 
 ### set
 > set value to __httpServer.response.headers['set-cookie']__
+
+```js
     cookie.set('name', 'value'[, optoin])
+```
 
 ### remove
 > set "expires"
+```js
     cookie.remove('name'[, option])
-
-
+````
