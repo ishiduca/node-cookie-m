@@ -5,50 +5,62 @@ __cookie m__anager
 ## synoppis
 
 ```js
-var port = 8080
-var uuid = require('uuid')
-var Cookie = require(__dirname + '/index')
+var http   = require('http')
+var Cookie = require('cookie-m')
+var uuid   = require('uuid')
 
-var counts = {}
+var port    = 8080
+var key     = 'sid'
+var timeout = 1000 * 60 // 1min
+var counts  = {}
 
-require('http').createServer(function (req, res) {
-    faviconIgnore(req, res)
+http.createServer(function handle (req, res) {
+    if (faviconIgnore(req, res)) return
 
     var cookie = new Cookie(req, res)
-    var sessionID = cookie.get('session-id')
-    var expire, timeout
+    var sessionID = cookie.get(key)
+    var expire    = (new Date(Date.now() + timeout)).toUTCString()
+    var mess
 
-    console.log('%s "%s"', req.url, sessionID)
-
-    
-    if (! sessionID || ! counts[sessionID]) {
-        timeout = (1000 * 60) // 1min
-        expire = (new Date(Date.now() + timeout)).toUTCString()
-        sessionID = uuid.v1()
-
+    if (! sessionID) sessionID = uuid.v4()
+    if (! counts[sessionID]) {
+        cookie.set(key, sessionID, {expires: expire})
         counts[sessionID] = 0
-
-        cookie.set('session-id', sessionID, {expire: expire})
+        setTimeout(function () {
+            delete counts[sessionID]
+            console.log('clear "%s"', sessionID)
+        }, timeout)
     }
 
 
     switch (req.url) {
       case '/logout':
-        cookie.remove('session-id')
-        break;
-      case '/inc':
-        counts[sessionID]++
-        break;
-      case '/dec':
-        counts[sessionID]--
-        break;
-      default :
-        ; break;
+          cookie.expire(key)
+          break
+        default :
+        counts[sessionID] += 1
+        break
     }
 
-    res.end(String(counts[sessionID]))
+    mess = ('%s "%d"').replace('%s', sessionID)
+                      .replace('%d', counts[sessionID])
+    res.end(mess)
 
-}).listen(port)
+    console.log('%s %s - "%d"', req.url, sessionID, counts[sessionID])
+
+}).listen(port, function () {
+    console.log('server start to listen on port "%d"', port)
+})
+
+function faviconIgnore (req, res) {
+    if (req.url !== '/favicon.ico') return
+
+    res.writeHead(200, {'content-type': 'image/x-icon'})
+    res.end()
+
+    return true
+}
+
 ```
 
 ## method
@@ -58,21 +70,25 @@ require('http').createServer(function (req, res) {
 - `remove`
 
 ### get
-> get value form __httpServer.request.headers.cookie__
+
+get value form __httpServer.request.headers.cookie__
 
 ```js
     cookie.get('name')
 ```
 
 ### set
-> set value to __httpServer.response.headers['set-cookie']__
+
+set value to __httpServer.response.headers['set-cookie']__
 
 ```js
     cookie.set('name', 'value'[, optoin])
 ```
 
 ### remove
-> set "expires"
+
+set "expires"
+
 ```js
     cookie.remove('name'[, option])
 ````
