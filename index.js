@@ -48,7 +48,7 @@ Cookie.prototype.finalize = function (res) {
     var maped = Object.keys(setCookie).map(function (key) {
         return stringify(key, setCookie[key][0], setCookie[key][1])
     })
-    res.setHeader('set-cookie', maped)
+    maped.length > 0 && res.setHeader('set-cookie', maped)
     return this
 }
 Cookie.prototype.stringify = function (key, val, opt) {

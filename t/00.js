@@ -70,3 +70,8 @@ q.test('.finalize()', function (t) {
     c.finalize(this.res)
     t.like(this.res.headers['set-cookie'][0], /^foo=bar; (path=\/; expire=dummy; httpOnly|path=\/; httpOnly; expire=dummy|expire=dummy; path=\/; httpOnly|expire=dummy; httpOnly; path=\/|httpOnly; path=\/; expire=dummy|httpOnly; expire=dummy; path=\/)$/)
 })
+q.test('.finalize() - when cookie not set', function (t) {
+    var c = new Cookie(this.req, this.res)
+    c.finalize(this.res)
+	t.ok(! this.res.headers['set-cookie'])
+})

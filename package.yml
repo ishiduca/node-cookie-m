@@ -8,4 +8,6 @@ keywords: cookie
 license: MIT
 main: ./
 name: cookie-m
-version: 0.0.1
+scripts:
+  test: with-sound prove -e node --ext .js -v
+version: 0.0.2
