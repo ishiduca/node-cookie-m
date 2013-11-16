@@ -63,32 +63,39 @@ function faviconIgnore (req, res) {
 
 ```
 
+## instance
+
+```js
+var cookie = new Cookie(request, response)
+```
+
 ## method
 
-- `get`
-- `set`
-- `remove`
+- `get` ...... return the cookie value form __httpServer.request.headers.cookie__
+- `set` ...... set the cookie value with optoinal paramaters(ex. `expires`, `path`) to __httpServer.response.headers['set-cookie']__
+- `remove` ... set `remove`
 
 ### get
 
-get value form __httpServer.request.headers.cookie__
-
 ```js
-    cookie.get('name')
+cookie.get('name')
 ```
 
 ### set
 
-set value to __httpServer.response.headers['set-cookie']__
-
 ```js
-    cookie.set('name', 'value'[, optoin])
+// option example
+// var option = {
+//     path: '/private'
+//   , expires: (new Date(Date.now() + 1000 * 60 * 60)).toUTCString()
+//   , HttpOnly: true
+// }
+
+cookie.set('name', 'value'[, optoin])
 ```
 
 ### remove
 
-set "expires"
-
 ```js
-    cookie.remove('name'[, option])
+cookie.remove('name'[, option])
 ````
