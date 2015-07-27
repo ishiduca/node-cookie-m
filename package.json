@@ -1,16 +1,20 @@
 {
   "keywords": "cookie",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "name": "cookie-m",
   "author": "ishiduca@gmail.com",
   "license": "MIT",
   "description": "cookie parser",
   "main": "./",
   "devDependencies": {
-    "qunitjs": "~1.10.0",
-    "qunit-tap": "~1.4.1"
+    "deepmerge": "^0.2.10",
+    "hat": "0.0.3",
+    "tape": "^4.0.1",
+    "through2": "^2.0.0",
+    "xtend": "^4.0.0"
   },
   "scripts": {
-    "test": "with-sound prove -e node --ext .js -v"
-  }
+    "test": "tape t/*.js"
+  },
+  "dependencies": {}
 }

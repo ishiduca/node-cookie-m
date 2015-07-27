@@ -1,59 +1,57 @@
 #!/usr/bin/env node
 'use strict'
+var path   = require('path')
+var url    = require('url')
+var http   = require('http')
+var rack   = require('hat').rack(256)
+var Cookie = require('../index')
 
-var path = require('path')
-var http = require('http')
-var Cookie = require(path.join( __dirname, '..'))
-var uuid = require('uuid')
+var port   = process.env.PORT || 3001
+var key    = 'SessionID'
+var store  = {}
+var times  = {}
 
-var port = 8080
-var key = 'sid'
-var timeout = 1000 * 60 // 1min
-var counts = {}
 
-http.createServer(function handle (req, res) {
-    if (faviconIgnore(req, res)) return
+http.createServer(function (req, res) {
+    var pathname = url.parse(req.url).pathname
+    if (pathname === '/favicon.ico') return favicon(res)
 
     var cookie = new Cookie(req, res)
-    var sessionID = cookie.get(key)
-    var expire    = (new Date(Date.now() + timeout)).toUTCString()
-    var mess
+    var sid    = cookie.get(key)
 
-    if (! sessionID) sessionID = uuid.v4()
-    if (! counts[sessionID]) {
-        cookie.set(key, sessionID, {expires: expire})
-        counts[sessionID] = 0
-        setTimeout(function () {
-            delete counts[sessionID]
-            console.log('clear "%s"', sessionID)
-        }, timeout)
+    if (! sid) sid = rack()
+
+    if (! store[sid]) {
+        cookie.put(key, sid, {"max-age": 60})
+        store[sid] = 0
+        times[sid] = setTimeout(clear.bind(null, sid), 1000 * 60)
     }
 
-
-    switch (req.url) {
-      case '/logout':
-        cookie.expire(key)
-        break
-      default :
-        counts[sessionID] += 1
-        break
+    if (pathname === '/logout') {
+        cookie.remove(key)
+        clear(sid)
+    }
+    else {
+        store[sid] += 1
     }
 
-    mess = ('%s "%d"').replace('%s', sessionID)
-                      .replace('%d', counts[sessionID])
+    var mess = ('%s "%d"').replace('%s', sid).replace('%d', store[sid] || 'none')
+
     res.end(mess)
 
-    console.log('%s %s - "%d"', req.url, sessionID, counts[sessionID])
-
-}).listen(port, function () {
-    console.log('server start to listen on port "%d"', port)
 })
+.listen(port)
 
-function faviconIgnore (req, res) {
-    if (req.url !== '/favicon.ico') return
+function clear (sid) {
+    var id = times[sid]
+    clearTimeout(id)
+    id = undefined
+    delete times[sid]
+    delete store[sid]
+}
 
-    res.writeHead(200, {'content-type': 'image/x-icon'})
+function favicon (res) {
+    res.statusCode = 200
+    res.setHeader('content-type', 'image/x-icon')
     res.end()
-
-    return true
 }

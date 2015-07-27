@@ -1,60 +1,63 @@
-var qs = require('querystring')
+var parse     = require('./lib/parse')
+var stringify = require('./lib/stringify')
 
 module.exports = Cookie
-Cookie.Cookie  = Cookie
-
 
 function Cookie (req, res) {
-    this.cookie    = this.parse(req.headers.cookie)
-    this.setCookie = {}
+    if (!(this instanceof Cookie)) return new Cookie(req, res)
 
-    var that = this
+    this.cookies    = parse(req.headers.cookie || '')
+    this.setCookies = {}
+
+    var me = this
     var writeHead = res.writeHead
+
     res.writeHead = function () {
-        that.finalize(this)
-        return writeHead.apply(this, arguments)
+        finalize(this)
+        writeHead.apply(this, arguments)
     }
 
-    return this
+    function finalize (res) {
+        var setCookies = stringify(me.setCookies)
+        setCookies.length > 0 && res.setHeader('set-cookie', setCookies)
+    }
 }
 
-Cookie.prototype.sep         = /[;,]\s*/g
-Cookie.prototype.defaultPath = '/'
-Cookie.prototype.defaultSep  = '; '
+Cookie.prototype.get = function (key) {
+    return this.cookies[key]
+}
 
-Cookie.prototype.parse = function (cookieStr) {
-    return qs.parse((cookieStr || '').replace(this.sep, '&'))
+Cookie.prototype.put = function (key, val, _opt) {
+    var opt = _opt || {}
+    opt.path || (opt.path = '/')
+    this.setCookies[key] = [[key, val]].concat(Object.keys(opt).map(m))
+
+    function m (key) {
+        return opt[key] === true ? [key] : [key, opt[key]]
+    }
 }
-Cookie.prototype.get = function (name) {
-    return this.cookie[name]
-}
-Cookie.prototype.set = function (name, val, option) {
-    option      || (option = {})
-    option.path || (option.path = this.defaultPath)
-    this.setCookie[name] = [ val, option ]
-    return this
-}
-Cookie.prototype.expire =
-Cookie.prototype.remove = function (name, option) {
-    var cookie = this.setCookie[name]
-    option || (option = (cookie && cookie[1]) ? cookie[1] : {})
-    option.expires = (new Date(0)).toUTCString()
-    this.set(name, '1', option)
-    return this
-}
-Cookie.prototype.finalize = function (res) {
-    var stringify = this.stringify.bind(this)
-    var setCookie = this.setCookie
-    var maped = Object.keys(setCookie).map(function (key) {
-        return stringify(key, setCookie[key][0], setCookie[key][1])
-    })
-    maped.length > 0 && res.setHeader('set-cookie', maped)
-    return this
-}
-Cookie.prototype.stringify = function (key, val, opt) {
-    var pair = {}; pair[key] = val
-    return [ qs.stringify(pair) ].concat(Object.keys(opt || {}).map(function (key) {
-        var val = opt[key]
-        return (val === true) ? key : [key, val].join('=')
-    })).join(this.defaultSep)
+
+Cookie.prototype.remove = function (key, _opt) {
+    var setCookie = toArray(this.setCookies[key])
+    var keys = setCookie.map(function (pair) { return pair[0] })
+    var KEYS = keys.map(function (key) { return key.replace('-', '').toUpperCase() })
+    var index
+
+    if ((index = KEYS.indexOf('MAXAGE'))  !== -1) setCookie.splice(index, 1)
+    if ((index = KEYS.indexOf('EXPIRES')) !== -1) setCookie.splice(index, 1)
+    if ((index = KEYS.indexOf('PATH')) === -1) setCookie = setCookie.concat([['path', '/']])
+
+    setCookie.push(['expires', (new Date(0)).toUTCString() ])
+
+    this.setCookies[key] = [[key, '1']].concat(setCookie)
+
+    function toArray (setCookie) {
+        if (_opt) return Object.keys(_opt).map(m)
+        if (setCookie) return setCookie.slice(1)
+        return []
+    }
+
+    function m (key) {
+        return opt[key] === true ? [key] : [key, opt[key]]
+    }
 }

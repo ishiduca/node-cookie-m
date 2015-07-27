@@ -2,100 +2,76 @@
 
 __cookie m__anager
 
-## synoppis
+## example
 
 ```js
 var http   = require('http')
+var hat    = require('hat')
 var Cookie = require('cookie-m')
-var uuid   = require('uuid')
 
-var port    = 8080
-var key     = 'sid'
-var timeout = 1000 * 60 // 1min
-var counts  = {}
+var store = {}
 
-http.createServer(function handle (req, res) {
-    if (faviconIgnore(req, res)) return
-
+var server = http.createServer(function app (req, res) {
     var cookie = new Cookie(req, res)
-    var sessionID = cookie.get(key)
-    var expire    = (new Date(Date.now() + timeout)).toUTCString()
-    var mess
+    var foo    = cookie.get('foo')
 
-    if (! sessionID) sessionID = uuid.v4()
-    if (! counts[sessionID]) {
-        cookie.set(key, sessionID, {expires: expire})
-        counts[sessionID] = 0
-        setTimeout(function () {
-            delete counts[sessionID]
-            console.log('clear "%s"', sessionID)
-        }, timeout)
+    if (! foo) {
+        foo = rack()
+        cookie.put('foo', foo)
+        store[foo] = 1
+    }
+    else {
+        store[foo] += 1
     }
 
-
-    switch (req.url) {
-      case '/logout':
-          cookie.expire(key)
-          break
-        default :
-        counts[sessionID] += 1
-        break
+    if (req.url === '/out') {
+        cookie.remove('foo')
+        delete store[foo]
+        return res.end('remove cookie'))
     }
 
-    mess = ('%s "%d"').replace('%s', sessionID)
-                      .replace('%d', counts[sessionID])
-    res.end(mess)
-
-    console.log('%s %s - "%d"', req.url, sessionID, counts[sessionID])
-
-}).listen(port, function () {
-    console.log('server start to listen on port "%d"', port)
+    res.end(('{{FOO}}: {{FOO_VAL}}').replace(/{{FOO}}}/,    foo)
+                                    .replace(/{{FOO_VAL}}/, store[foo]))
+    
 })
-
-function faviconIgnore (req, res) {
-    if (req.url !== '/favicon.ico') return
-
-    res.writeHead(200, {'content-type': 'image/x-icon'})
-    res.end()
-
-    return true
-}
-
 ```
 
-## instance
+## api
 
-```js
-var cookie = new Cookie(request, response)
-```
+### var cookie = new Cookie(req, res)
 
-## method
+return a cookie object.
 
-- `get` ...... return the cookie value form __httpServer.request.headers.cookie__
-- `set` ...... set the cookie value with optoinal paramaters(ex. `expires`, `path`) to __httpServer.response.headers['set-cookie']__
-- `remove` ... set `remove`
+* **req** an instance of `http.incomingMessage`
+* **res** an instance of `http.ServerResponse`
 
-### get
 
-```js
-cookie.get('name')
-```
+### var val = cookie.get(key)
 
-### set
+return a value from `req.headers.cookie`
 
-```js
-// option example
-// var option = {
-//     path: '/private'
-//   , expires: (new Date(Date.now() + 1000 * 60 * 60)).toUTCString()
-//   , HttpOnly: true
-// }
+* **key** cookie name
 
-cookie.set('name', 'value'[, optoin])
-```
 
-### remove
+### cookie.put(key, val[, opt])
 
-```js
-cookie.remove('name'[, option])
-````
+set a cookie to `res.headers['set-cookie']`
+
+* **key** cookie name
+* **val** value
+* **opt** cookie option object. this is an optional object.
+
+    ex: {httpOnly: true, expires: ((new Date(Date.now() + 1000 * 60 * 60)).toUTCString()}
+
+
+### cookie.remove(key[, opt])
+
+remove a cookie. seealso **cookie.put**
+
+## author
+
+ishiduca@gmail.com
+
+## license
+
+MIT
