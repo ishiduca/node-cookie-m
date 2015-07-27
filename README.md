@@ -6,7 +6,7 @@ __cookie m__anager
 
 ```js
 var http   = require('http')
-var hat    = require('hat')
+var rack   = require('hat').rack(256)
 var Cookie = require('cookie-m')
 
 var store = {}
